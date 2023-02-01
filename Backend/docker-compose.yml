@@ -1,0 +1,55 @@
+version: '3'
+
+services:
+  orion:
+    image: fiware/orion:1.13.0
+    restart: always
+    ports:
+      - "1026:1026"
+    command: -logLevel DEBUG -noCache -dbhost mongo
+    depends_on:
+      - mongo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:1026/version"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+
+  mongo:
+    image: mongo:3.2
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongodata:/data/db
+
+  quantumleap:
+    image: smartsdk/quantumleap
+    restart: always
+    ports:
+      - "8668:8668"
+    depends_on:
+      - mongo
+      - orion
+      - crate
+    environment:
+      - CRATE_HOST=crate
+
+  crate:
+    image: crate
+    restart: always
+    ports:
+      # Admin UI
+      - "4200:4200"
+      # Transport protocol
+      - "4300:4300"
+    volumes:
+      - ./cratedata:/data
+
+volumes:
+  mongodata:
+  cratedata:
+  redisdata:
+
+networks:
+    conexions:
